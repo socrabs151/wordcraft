@@ -11098,6 +11098,16 @@ fn hostile_absolute_pages_never_land_on_page_one() {
     assert_eq!(page(&mut s), 1, "page 0 is the first page");
 }
 
+/// #3676: `caret.set` takes a 0-based page; an oversized page is rejected instead of
+/// truncating to page 0 on 32-bit and wasm.
+#[test]
+fn caret_set_rejects_a_page_number_that_does_not_fit() {
+    let mut s = s();
+    run(&mut s, "text.insert", json!({"text": "Hello"}));
+    let r = s.run("caret.set", &json!({"page": 1u64 << 32, "x": 100.0, "y": 100.0}));
+    assert!(matches!(r, Err(crate::CmdError::Params(_))), "page 2^32: {r:?}");
+}
+
 /// #3676: `file.exportPng` rejects a page number that cannot be an index instead of
 /// exporting page 1 (the 32-bit truncation) and writing it to the requested path.
 #[cfg(not(target_arch = "wasm32"))]
